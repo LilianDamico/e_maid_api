@@ -1,11 +1,13 @@
-import crypto from 'node:crypto';
+import crypto from 'crypto';
 
-export function verifySignature(rawBody, signature, secret) {
-  if (!secret) return false;
-  try {
-    const hmac = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature));
-  } catch {
-    return false;
-  }
+export function verifySignature(req) {
+  const signature = req.headers['x-signature-id'];
+  const secret = process.env.WEBHOOK_SECRET;
+
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(req.body))
+    .digest('hex');
+
+  return signature === expectedSignature;
 }
