@@ -1,8 +1,9 @@
 // src/controllers/mp.controller.js
 import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
+import { verifySignature } from '../utils/verifySignature.js';
 
 const mp = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN, // defina no .env
+  accessToken: process.env.MP_ACCESS_TOKEN,
 });
 
 // Healthcheck
@@ -20,8 +21,7 @@ export const createPixPayment = async (req, res) => {
         description,
         payment_method_id: 'pix',
         payer: { email: userEmail },
-        external_reference: externalReference, // bookingId etc.
-        // optional: notification_url: 'https://sua-api/webhook/mercadopago'
+        external_reference: externalReference,
       },
     });
 
@@ -46,12 +46,11 @@ export const createPreference = async (req, res) => {
         payer: { email: userEmail },
         external_reference: externalReference,
         back_urls: {
-          success: 'https://seu-dominio/sucesso',
-          failure: 'https://seu-dominio/falha',
-          pending: 'https://seu-dominio/pendente',
+          success: process.env.FRONT_SUCCESS_URL || 'https://seu-dominio/sucesso',
+          failure: process.env.FRONT_FAILURE_URL || 'https://seu-dominio/falha',
+          pending: process.env.FRONT_PENDING_URL || 'https://seu-dominio/pendente',
         },
         auto_return: 'approved',
-        // optional: notification_url: 'https://sua-api/webhook/mercadopago'
       },
     });
 
@@ -62,12 +61,21 @@ export const createPreference = async (req, res) => {
   }
 };
 
-// Webhook (simples por enquanto; ajuste depois com verificação de assinatura)
+// Webhook com verificação de assinatura
 export const webhook = async (req, res) => {
   try {
+    // Verificar assinatura do webhook
+    if (!verifySignature(req)) {
+      console.warn('Webhook com assinatura inválida');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+    
     console.log('Webhook headers:', req.headers);
-    console.log('Webhook body:', req.body); // lembre de usar express.raw para essa rota
-    // TODO: consultar /v1/payments/:id quando type/action forem de pagamento
+    console.log('Webhook body:', req.body);
+    
+    // TODO: Implementar processamento do webhook
+    // Exemplo: consultar /v1/payments/:id quando type/action forem de pagamento
+    
     return res.sendStatus(200);
   } catch (err) {
     console.error('Webhook error:', err);

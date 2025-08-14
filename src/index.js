@@ -1,13 +1,20 @@
 import 'dotenv/config.js';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // Rotas que você já tem
 import mpRoutes from './routes/mp.routes.js';
 // *** REMOVIDO *** // import accountRoutes from './routes/account.routes.js';
 
 const app = express();
+app.use(helmet());
 app.use(cors());
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+}));
 app.use(express.json());
 
 // Mercado Pago
